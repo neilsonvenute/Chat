@@ -1,0 +1,125 @@
+<input type="text" name="txtNome" id="txtNome" value="" hidden="true">
+<link rel="stylesheet" href="/css/sala.css" type="text/css">
+<form action="" name="chat" id="chat">
+    <div class="card  bg-primary mt-4">
+        <div class="card-header bg-warning">
+            <div class="card-title text-black">
+                <label for="nome" style="font-size:20px; font-weight:bold;">{{texto}}</label>
+            </div>
+            <div class="is_typing text-danger" id="is_typing"></div>
+        </div>
+        <div class="card-body bg-white" style="overflow: auto;" id="bodyMessage">
+            <div class="messages mt-2 "></div>
+        </div>
+        <div class="card-footer bg-white bg-outline-primary">
+            <div class="input-group">
+                <label for="lblMensagem" class="text-black">Mensagem:</label>
+                <div class="input-group mb-3">
+                    <input type="text" class="form-control" placeholder="Digite aqui..." name="txtMensagem"
+                        id="txtMensagem">
+                    <div class="input-group-append">
+                        <button type="submit" name="btnEnviar" class="btn btn-outline-secondary text-black">Enviar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+
+
+<script type="text/javascript">
+    //const socket = io("http://192.168.1.5:8045")
+    const socket = io.connect();
+    var room = prompt("Informe o nome da sala (ana)", "");
+    var nomeUsuario = prompt("Qual é o seu nome?", "");
+    $('#txtNome').val(nomeUsuario)
+
+    socket.on('connect', function () {
+        // Connected, let's sign-up for to receive messages for this room
+        socket.emit('room', room);
+
+        function renderMessages(message) {
+            /*$('.messages').append('<div class="message mt-2" style="border-radius: 10px;"><strong class="text-primary">' +
+                message.author + '</strong>: <br>' + message.message + '</div>')*/
+            $('.messages').append('<div class="message mt-2 text-justify" style="border-radius:' +
+                ' 6px; background-color: AliceBlue;"><div style="margin-left: 5px;"><strong class="text-primary">' +
+                message.author + '</strong></br>' + message.message + '</br>' +
+                '</div><div class="text-right" style="margin-right: 5px;"><small class="text-secondary">' + message.dataa +
+                '</small></div></div > ')
+        }
+
+        socket.on('previousMessage', function (messages) {
+            for (message of messages) {
+                renderMessages(message)
+            }
+        })
+
+        socket.on('receivedMessage', function (message) {
+            renderMessages(message)
+            $(function () {
+                $('#bodyMessage').animate({ scrollTop: 9999999 }, 500);
+                $('.is_typing').empty()
+            });
+        })
+
+        $("#txtMensagem").keypress(function () {
+            socket.emit("typing", $('#txtNome').val());
+        });
+
+        $('#chat').ready(function () {
+            $('#txtMensagem').keyup(function (e) {
+                if (e.wich == 8 || e.keyCode == 8) {
+                    socket.emit("not-typing", $('#txtNome').val());
+                }
+            })
+        })
+
+        socket.on("not-typing", function (data) {
+            $('.is_typing').empty()
+        });
+
+        socket.on("typing", function (data) {
+            $('.is_typing').empty()
+            $('.is_typing').append("<strong><em style='font-size:12px'>" + data + " está digitando...</em></strong>")
+        });
+
+    });
+
+    $('#chat').submit(function (event) {
+        event.preventDefault();
+
+        var author = $('input[name=txtNome]').val()
+        var message = $('input[name=txtMensagem]').val()
+        var dataa = pegarDataAtual()
+
+        if (message.length) {
+            var messageObject = {
+                author: author,
+                message: message,
+                dataa: dataa
+            }
+            renderMessages(messageObject)
+            //socket.broadcast.emit('sendMessage', messageObject);
+            socket.emit('sendMessage', messageObject);
+    
+            $(function () {
+                $('#bodyMessage').animate({ scrollTop: 9999999 }, 500);
+            });
+        }
+        $('#txtMensagem').val("")
+    })
+
+    function pegarDataAtual() {
+        var dataAtual = new Date();
+        var dia = (dataAtual.getDate() < 10 ? '0' : '') + dataAtual.getDate();
+        var mes = ((dataAtual.getMonth() + 1) < 10 ? '0' : '') + (dataAtual.getMonth() + 1);
+        var ano = dataAtual.getFullYear();
+        var hora = (dataAtual.getHours() < 10 ? '0' : '') + dataAtual.getHours();
+        var minuto = (dataAtual.getMinutes() < 10 ? '0' : '') + dataAtual.getMinutes();
+        var segundo = (dataAtual.getSeconds() < 10 ? '0' : '') + dataAtual.getSeconds();
+
+        //var dataFormatada = dia + "/" + mes + "/" + ano + " " + hora + ":" + minuto + ":" + segundo;
+        var dataFormatada = dia + "/" + mes + "/" + ano + " " + hora + ":" + minuto;
+        return dataFormatada;
+    }
+</script>
