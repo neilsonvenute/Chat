@@ -31,13 +31,6 @@ app.use('/chat', chats)
 let messages = []
 var usuarios = 0
 
-
-/*let counter = 0
-setInterval(() => {
-    io.emit('msg',counter++)
-}, 1000);*/
-
-
 io.sockets.on('connection', (socket) => {
 
     socket.on('room', function(room) {
